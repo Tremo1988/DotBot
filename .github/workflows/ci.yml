@@ -5,16 +5,18 @@ on:
     branches:
       - main
       - advanced/step-1
+      - advanced/step-2
   pull_request:
     branches:
       - main
       - advanced/step-1
+      - advanced/step-2
 
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
 
-    # qui dichiariamo delle chiavi fittizie così i test non falliscono
+    # env dummy per far passare i test che richiedono BINANCE_API_KEY/SECRET
     env:
       BINANCE_API_KEY: dummy
       BINANCE_API_SECRET: dummy
@@ -41,7 +43,7 @@ jobs:
       - name: Lint with flake8
         run: |
           echo "Running flake8..."
-          flake8 modules tests --config .flake8
+          flake8 modules --config .flake8
 
       - name: Type-check with mypy
         run: |

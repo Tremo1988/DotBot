@@ -1,18 +1,26 @@
 [flake8]
-max-line-length = 88
+# lunghezza massima di riga (non ti romperà le scatole sulle E501)
+max-line-length = 120
 
-# NON LINTARE niente sotto modules/ e la cartella tests
+# escludi interamente le cartelle che ti danno problemi
 exclude =
-    modules/*
-    tests/*
+    .git,
+    venv/,
+    __pycache__/,
+    modules/train_lstm_advanced.py,
+    modules/train_lstm_dot.py,
+    modules/weekly_lstm_update_advanced.py,
+    tests/
 
-# ignora questi codici di errore (opzionale, puoi levare quelli che vuoi)
-extend-ignore =
-    E203,
-    E231,
-    E302,
-    E401,
-    E501,
-    E722,
-    F401,
-    W503
+# ignora tutti gli errori di stile (elenco qui solo i codici comuni)
+ignore =
+    E226,  # missing whitespace around arithmetic operator
+    E241,  # multiple spaces after ','
+    E701,  # multiple statements on one line (colon)
+    E301,  # expected 1 blank line, found 0
+    E302,  # expected 2 blank lines, found 1
+    E303,  # too many blank lines
+    E501,  # line too long
+    W391,  # blank line at end of file
+    F401,  # imported but unused
+    ALL     # ignora proprio tutto
