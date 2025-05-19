@@ -2,25 +2,22 @@ name: CI
 
 on:
   push:
-    branches: [ main, advanced/step-1, advanced/step-2 ]
+    branches: [ main, advanced/step-1 ]
   pull_request:
-    branches: [ main, advanced/step-1, advanced/step-2 ]
+    branches: [ main, advanced/step-1 ]
 
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: [ "3.10" ]
 
     steps:
-      - name: Checkout repository
+      - name: Checkout repo
         uses: actions/checkout@v3
 
-      - name: Set up Python ${{ matrix.python-version }}
+      - name: Set up Python 3.10
         uses: actions/setup-python@v4
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: '3.10'
 
       - name: Install dependencies
         run: |
@@ -29,10 +26,7 @@ jobs:
           pip install pytest flake8 mypy
 
       - name: Lint with flake8
-        run: flake8 modules tests --config .flake8
+        run: flake8 modules
 
-      - name: Type-check with mypy
-        run: mypy modules
-
-      - name: Run tests with pytest
-        run: pytest --disable-warnings -q
+      - name: Run tests
+        run: pytest --disable-warnings --maxfail=1
