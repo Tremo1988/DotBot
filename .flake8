@@ -1,8 +1,9 @@
 [flake8]
-# lunghezza massima di riga (non ti romperà le scatole sulle E501)
+
+# lunghezza massima di riga (non ti romperà per E501)
 max-line-length = 120
 
-# escludi interamente le cartelle che ti danno problemi
+# escluse tutte queste cartelle/file dal controllo
 exclude =
     .git,
     venv/,
@@ -12,15 +13,13 @@ exclude =
     modules/weekly_lstm_update_advanced.py,
     tests/
 
-# ignora tutti gli errori di stile (elenco qui solo i codici comuni)
+# qui SOLO codici di errore da ignorare
 ignore =
     E226,  # missing whitespace around arithmetic operator
     E241,  # multiple spaces after ','
-    E701,  # multiple statements on one line (colon)
     E301,  # expected 1 blank line, found 0
     E302,  # expected 2 blank lines, found 1
     E303,  # too many blank lines
     E501,  # line too long
     W391,  # blank line at end of file
-    F401,  # imported but unused
-    ALL     # ignora proprio tutto
+    F401   # imported but unused
