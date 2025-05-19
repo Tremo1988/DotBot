@@ -1,21 +1,12 @@
 [flake8]
 max-line-length = 88
 
-# Escludi i file di training LSTM e la cartella tests
+# NON LINTARE niente sotto modules/ e la cartella tests
 exclude =
-    train_lstm_*.py
-    weekly_lstm_update_advanced.py
-    tests
+    modules/*
+    tests/*
 
-# Ignora questi codici di errore:
-# E203 whitespace prima dei due punti
-# E231 virgola senza spazio
-# E302 blank lines
-# E401 import multipli su una riga
-# E501 linea troppo lunga
-# E722 bare except
-# F401 import non usato
-# W503 line break before binary operator
+# ignora questi codici di errore (opzionale, puoi levare quelli che vuoi)
 extend-ignore =
     E203,
     E231,
