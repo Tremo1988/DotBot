@@ -47,7 +47,8 @@ jobs:
 
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: pytest-report
-          path: test_report.xml
+          path: pytest-report.xml
+
