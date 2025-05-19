@@ -36,10 +36,3 @@ jobs:
 
       - name: Run tests with pytest
         run: pytest --disable-warnings -q
-
-      - name: Upload test results
-        if: ${{ always() }}
-        uses: actions/upload-artifact@v2
-        with:
-          name: pytest-report
-          path: '**/pytest-report.xml'
