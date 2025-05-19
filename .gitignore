@@ -11,3 +11,4 @@ lstm_model.h5
 Thumbs.db
 .vscode/
 .idea/
+.flake8

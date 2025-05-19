@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [3.10]  # o 3.11 se preferisci
+        python-version: [3.11]  # o 3.11 se preferisci
 
     steps:
     - name: Checkout repository
