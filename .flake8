@@ -1,11 +1,7 @@
 [flake8]
 max-line-length = 88
 exclude =
-  train_lstm_advanced.py
-  train_lstm_dot.py
-  weekly_lstm_update_advanced.py
-ignore =
-  F401   # import inutilizzati
-  E231   # virgola senza spazio dopo
-  E302   # blank lines
-  E722   # bare except
+    train_lstm_advanced.py
+    train_lstm_dot.py
+    weekly_lstm_update_advanced.py
+ignore = F401 E231 E302 E722
