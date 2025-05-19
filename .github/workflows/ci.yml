@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [ main, advanced/step-1 ]
+    branches: [ main, advanced/step-1, advanced/step-2 ]
   pull_request:
-    branches: [ main, advanced/step-1 ]
+    branches: [ main, advanced/step-1, advanced/step-2 ]
 
 jobs:
   build-and-test:
@@ -39,7 +39,7 @@ jobs:
 
       - name: Upload test results
         if: ${{ always() }}
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v2
         with:
           name: pytest-report
           path: '**/pytest-report.xml'
