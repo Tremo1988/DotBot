@@ -1,0 +1,18 @@
+{
+  "symbol": "DOT/USDC",
+  "timeframe": "30m",
+  "sell_threshold_percent": 60,
+  "min_dot_to_sell": 0.5,
+  "stop_loss_pct": 0.05,
+  "trailing_stop_pct": 0.02,
+  "stop_loss_atr_mult": 2,
+  "trailing_atr_mult": 1.5,
+  "min_adx_trend": 15,
+  "min_adx_operativita": 20
+  "reddit_keywords": [
+    "polkadot",
+    "dot",
+    "parachain"
+  ],
+  "reddit_subreddit": "Polkadot"
+}
