@@ -1,0 +1,8 @@
+# Librerie principali
+pandas==1.5.3     # pandas-ta non supporta ufficialmente pandas 2.x
+pandas-ta==0.3.14b
+numpy>=1.22,<1.26  # range compatibile sia con pandas 1.5 che con tensorflow 2.x
+ccxt>=4.0.0
+requests>=2.31.0
+python-dotenv>=1.0.1
+# altre dipendenze ancora presenti nel file originale...

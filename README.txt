@@ -1,0 +1,1 @@
+Avvia con: python main.py (ambiente attivo)
