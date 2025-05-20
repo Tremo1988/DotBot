@@ -1,18 +1,10 @@
 @echo off
-SET /P commit_msg="Inserisci il messaggio del commit: "
+SET COMMIT_MESSAGE=Aggiornamento automatico
 
-echo.
-echo ► Aggiunta file modificati...
 git add .
+git commit -m "%COMMIT_MESSAGE%"
+git push origin HEAD
 
 echo.
-echo ► Commit in corso...
-git commit -m "%commit_msg%"
-
-echo.
-echo ► Push su GitHub...
-git push origin advanced/step-1
-
-echo.
-echo ► Operazione completata. Premi un tasto per uscire.
-pause >nul
+echo Codice caricato con successo su GitHub!
+pause
