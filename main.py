@@ -16,7 +16,6 @@ logging.basicConfig(
 )
 
 def log_and_notify(message: str):
-    """Stampa, logga e invia su Telegram."""
     logging.info(message)
     try:
         send_telegram_message(message)
@@ -25,57 +24,53 @@ def log_and_notify(message: str):
 
 def main():
     # ─── Caricamento configurazione ───────────────────────────────────────────────
-    cfg = get()  # tutti i parametri in un dict
+    cfg       = get()
     symbol    = cfg["symbol"]
     timeframe = cfg["timeframe"]
     loop_sec  = int(cfg.get("loop_seconds", 1800))
 
     # ─── Connessione all'exchange ─────────────────────────────────────────────────
-    ex = get_binance_connection()  # legge api key/secret da .env
+    ex = get_binance_connection()
 
     # ─── Bilanci iniziali ─────────────────────────────────────────────────────────
     try:
-        free_balances = ex.fetch_balance()["free"]
-        usdc_balance = free_balances.get("USDC", 0)
-        dot_balance  = free_balances.get(symbol.split("/")[0], 0)
+        free = ex.fetch_balance().get("free", {})
+        usdc = free.get("USDC", 0)
+        dot  = free.get(symbol.split("/")[0], 0)
     except Exception:
-        # modalità “paper” se manca la chiave
-        usdc_balance = cfg.get("paper_usdc_balance", 1000)
-        dot_balance  = cfg.get("paper_dot_balance", 10)
+        usdc = cfg.get("paper_usdc_balance", 1000)
+        dot  = cfg.get("paper_dot_balance", 10)
         logging.warning(
-            "No Binance credentials or fetch_balance failed — paper mode USDC=%s DOT=%s",
-            usdc_balance, dot_balance
+            "Paper mode attivato — USDC=%s DOT=%s", usdc, dot
         )
 
     # ─── Trade manager ────────────────────────────────────────────────────────────
-    tm = TradeManager(cfg, symbol, timeframe, dot_balance, usdc_balance)
+    # Ora la firma è: TradeManager(cfg, dot_balance, usdc_balance)
+    tm = TradeManager(cfg, dot, usdc)
 
     # ─── Ciclo principale ─────────────────────────────────────────────────────────
     while True:
         try:
-            # 1) prendo i dati OHLC
-            df = fetch_ohlcv(ex, symbol, timeframe)
-
-            # 2) calcolo indici tecnici
-            df = add_indicators(df)
+            df   = fetch_ohlcv(ex, symbol, timeframe)
+            df   = add_indicators(df)
             last = df.iloc[-1]
 
-            # 3) calcolo trend e sentiment
-            trend = compute_trend(last)
-            # useremo il subreddit uguale al ticker minuscolo, es "dot"
-            sentiment = get_reddit_sentiment(subreddit=symbol.split("/")[0].lower())
+            trend     = compute_trend(last)
+            sr_name   = symbol.split("/")[0].lower()
+            sentiment = get_reddit_sentiment(subreddit=sr_name)
 
-            # 4) decido cosa fare
             action = tm.evaluate(last, sentiment)
             tm.execute(action, last["close"], last, sentiment)
 
-            # 5) preparo il messaggio di aggiornamento
             msg = (
                 f"📊 Update:\n"
-                f"Price={last['close']:.4f}, RSI={last['rsi']:.2f}, MACDh={last['macd_hist']:.4f}\n"
-                f"Forecast={last['forecast_price']:.4f}, Δ={(last['forecast_price']-last['close']):.4f}, "
+                f"Price={last['close']:.4f}, RSI={last['rsi']:.2f}, "
+                f"MACDh={last['macd_hist']:.4f}\n"
+                f"Forecast={last['forecast_price']:.4f}, "
+                f"Δ={(last['forecast_price']-last['close']):.4f}, "
                 f"Sentiment=R{sentiment:.2f}\n"
-                f"ADX={last['adx']:.1f}, ATR={last['atr']:.2f}, Trend={trend}, Action={action}"
+                f"ADX={last['adx']:.1f}, ATR={last['atr']:.2f}, "
+                f"Trend={trend}, Action={action}"
             )
             log_and_notify(msg)
 

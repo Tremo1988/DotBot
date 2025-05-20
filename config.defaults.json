@@ -8,7 +8,7 @@
   "stop_loss_atr_mult": 2,
   "trailing_atr_mult": 1.5,
   "min_adx_trend": 15,
-  "min_adx_operativita": 20
+  "min_adx_operativita": 20,
   "reddit_keywords": [
     "polkadot",
     "dot",

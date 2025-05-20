@@ -6,7 +6,7 @@ from modules.config_loader import get
 
 # ─── User-Agent ────────────────────────────────────────────────────────────────
 _user_agent = get("reddit_user_agent") or "DotBotSentiment/2.0"
-HEADERS = {"User-Agent": _user_agent}
+HEADERS    = {"User-Agent": _user_agent}
 
 # ─── Default subreddit e parole chiave ──────────────────────────────────────────
 DEFAULT_SUBREDDIT = get("reddit_subreddit") or "Polkadot"
