@@ -5,10 +5,12 @@ on:
     branches:
       - main
       - advanced/step-1
+      - advanced/step-2
   pull_request:
     branches:
       - main
       - advanced/step-1
+      - advanced/step-2
 
 jobs:
   build-and-test:
@@ -40,7 +42,7 @@ jobs:
 
       - name: Run tests with pytest
         env:
-          # evita l’errore sui test Binance senza dover configurare segreti reali
+          # se fai test su API Binance, metti dummy per non far fallire
           BINANCE_API_KEY: dummy
           BINANCE_API_SECRET: dummy
         run: pytest --disable-warnings -q
