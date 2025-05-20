@@ -1,23 +1,9 @@
 [flake8]
-# massima lunghezza riga
 max-line-length = 88
-
-# escludi file e directory
 exclude =
-    .git,
-    venv/,
-    __pycache__/,
-    train_lstm_advanced.py,
-    train_lstm_dot.py,
-    weekly_lstm_update_advanced.py,
-    tests/
-
-# ignora questi codici (blank lines, multi-statement, operator spacing, bare except, eof-blank)
+    train_lstm_*.py
 ignore =
-    E305,  # expected 2 blank lines after class or function definition
-    E701,  # multiple statements on one line (colon)
-    E226,  # missing whitespace around arithmetic operator
-    E231,  # missing whitespace after ','
-    E302,  # expected 2 blank lines, found 1
-    E722,  # do not use bare except
-    W391   # blank line at end of file
+    F401  # import inutilizzati
+    E231  # virgola senza spazio dopo
+    E302  # blank lines
+    E722  # bare except
