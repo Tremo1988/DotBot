@@ -1,9 +1,15 @@
 [flake8]
 max-line-length = 88
+
+# Escludi i tuoi script di training LSTM (non servono in produzione)
 exclude =
-    train_lstm_*.py
-ignore =
+    train_lstm_advanced.py,
+    train_lstm_dot.py,
+    weekly_lstm_update_advanced.py
+
+# Ignora questi errori "interni" che non vogliamo blocchino il CI
+extend-ignore =
     F401  # import inutilizzati
-    E231  # virgola senza spazio dopo
+    E231  # virgola senza spazio
     E302  # blank lines
     E722  # bare except

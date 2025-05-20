@@ -5,12 +5,10 @@ on:
     branches:
       - main
       - advanced/step-1
-      - advanced/step-2
   pull_request:
     branches:
       - main
       - advanced/step-1
-      - advanced/step-2
 
 jobs:
   build-and-test:
@@ -27,7 +25,6 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
-          cache: pip
 
       - name: Install dependencies
         run: |
@@ -36,24 +33,14 @@ jobs:
           pip install pytest flake8 mypy
 
       - name: Lint with flake8
-        run: |
-          echo "Running flake8…"
-          flake8 modules --max-line-length=88
+        run: flake8 .
 
       - name: Type-check with mypy
-        run: |
-          echo "Running mypy…"
-          mypy modules
+        run: mypy modules
 
       - name: Run tests with pytest
-        run: |
-          echo "Running pytest…"
-          # fa sempre passare il job anche se non trova directory tests/
-          pytest --disable-warnings -q || true
-
-      - name: Upload pytest XML report
-        if: always()
-        uses: actions/upload-artifact@v3
-        with:
-          name: pytest-report
-          path: pytest-report.xml
+        env:
+          # evita l’errore sui test Binance senza dover configurare segreti reali
+          BINANCE_API_KEY: dummy
+          BINANCE_API_SECRET: dummy
+        run: pytest --disable-warnings -q
