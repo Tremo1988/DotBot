@@ -1,66 +1,93 @@
 import time
 import logging
+from dotenv import load_dotenv; load_dotenv()
+
 from modules.config_loader import get
 from modules.data_fetcher import get_binance_connection, fetch_ohlcv
 from modules.indicator_utils import add_indicators, compute_trend
-from modules.lstm_predictor import forecast as lstm_forecast
-from modules.sentiment import get_reddit_sentiment
+from modules.sentiment import combined_sentiment
 from modules.trade_manager import TradeManager
 from modules.telegram_notifier import send_telegram_message
 
-CONFIG = get()
+# ─── Logging ─────────────────────────────────────────────────────────────────────
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s: %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
 
-SYMBOL = CONFIG.get("symbol", "DOT/USDC")
-TIMEFRAME = CONFIG.get("timeframe", "30m")
-LOOP_SECONDS = CONFIG.get("loop_seconds", 1800)
+def log_and_notify(message: str):
+    logging.info(message)
+    try:
+        send_telegram_message(message)
+    except Exception as e:
+        logging.error("Telegram error: %s", e)
+
+def trova_asset_balance(balances, nome_token):
+    """Trova la chiave esatta dell'asset tra balances['total']"""
+    nome_token = nome_token.upper()
+    for asset in balances['total']:
+        if nome_token in asset and balances['total'][asset] > 0:
+            return asset
+    return nome_token  # fallback
 
 def main():
-    ex = get_binance_connection()
-    try:
-        bal = ex.fetch_balance()
-        dot_balance = bal["free"].get("DOT", 0)
-        usdc_balance = bal["free"].get("USDC", 0)
-    except Exception:
-        logging.warning("Binance credentials missing, paper-mode balances")
-        dot_balance = CONFIG.get("virtual_dot_balance", 0)
-        usdc_balance = CONFIG.get("virtual_usdc_balance", 0)
+    cfg       = get()
+    symbol    = cfg["symbol"]
+    token_sym = symbol.split("/")[0].upper()
+    timeframe = cfg["timeframe"]
+    loop_sec  = int(cfg.get("loop_seconds", 1800))
 
-    tm = TradeManager(CONFIG, dot_balance, usdc_balance)
+    sentiment_token = "polkadot"
+    ex = get_binance_connection()
+
+    # Verifica API e saldo reale
+    try:
+        balances = ex.fetch_balance()
+        dot_key = trova_asset_balance(balances, token_sym)
+        dot  = balances['total'].get(dot_key, 0)
+        usdc = balances['total'].get("USDC", 0)
+        logging.info("✅ Modalità reale attiva: USDC = %.2f | %s = %.4f", usdc, dot_key, dot)
+    except Exception as e:
+        logging.error("❌ Errore nel recupero dei bilanci Binance: %s", e)
+        return
+
+    tm = TradeManager(cfg, dot, usdc)
 
     while True:
         try:
-            ohlc = fetch_ohlcv(ex, SYMBOL, TIMEFRAME)
-            df_ind = add_indicators(ohlc)
-            last = df_ind.iloc[-1]
+            df = fetch_ohlcv(ex, symbol, timeframe)
+            df = add_indicators(df)
+            last = df.iloc[-1]
             trend = compute_trend(last)
-            sentiment_res = get_reddit_sentiment()
-            # unpack sentiment tuple or single float
-            if isinstance(sentiment_res, tuple) and len(sentiment_res) == 2:
-                sentiment_score, sentiment_posts = sentiment_res
-            else:
-                sentiment_score = sentiment_res
-                sentiment_posts = None
 
-            price = last["close"]
-            forecast_val = lstm_forecast(df_ind) or price
-            delta = forecast_val - price
-
-            action = tm.evaluate(last, sentiment_score)
-            tm.execute(action, price, last, sentiment_score)
-
-            message = (
-                f"📊 Update:\n"
-                f"Price={price:.4f}, RSI={last.rsi:.2f}, MACDh={last.macd_hist:.4f}\n"
-                f"Forecast={forecast_val:.4f}, Δ={delta:.4f}, Sentiment={sentiment_score if sentiment_score is not None else 'NA'}\n"
-                f"ADX={last.adx:.1f}, ATR={last.atr:.2f}, Trend={trend}, Action={action}"
+            sentiment = combined_sentiment(
+                subreddit=sentiment_token,
+                trend_keyword=sentiment_token,
+                token=sentiment_token,
+                weights=(0.5, 0.3, 0.2)
             )
-            print(message)
-            send_telegram_message(message)
+
+            logging.info(f"Sentiment combinato calcolato: {sentiment}")
+            action = tm.evaluate(last, sentiment)
+            tm.execute(action, last["close"], last, sentiment)
+
+            msg = (
+                f"📊 Update:\n"
+                f"Price={last['close']:.4f}, RSI={last['rsi']:.2f}, "
+                f"MACDh={last['macd_hist']:.4f}\n"
+                f"Forecast={last['forecast_price']:.4f}, "
+                f"Δ={(last['forecast_price'] - last['close']):.4f}, "
+                f"Sentiment={sentiment:.2f}\n"
+                f"ADX={last['adx']:.1f}, ATR={last['atr']:.2f}, "
+                f"Trend={trend}, Action={action}"
+            )
+            log_and_notify(msg)
 
         except Exception as e:
-            logging.error("Errore nel ciclo: %s", e)
+            logging.error("Errore nel ciclo principale: %s", e)
 
-        time.sleep(LOOP_SECONDS)
+        time.sleep(loop_sec)
 
 if __name__ == "__main__":
     main()

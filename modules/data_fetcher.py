@@ -1,29 +1,31 @@
 """Robust data_fetcher with credentials support."""
 from __future__ import annotations
 from typing import Optional
-import ccxt, json, logging
+import ccxt, os, logging
 from pathlib import Path
 import pandas as pd
-
-CONFIG_PATH = Path(__file__).resolve().parent.parent / "config.json"
-try:
-    _cfg = json.loads(CONFIG_PATH.read_text(encoding="utf-8"))
-except Exception:
-    _cfg = {}
+from modules.config_loader import get
 
 def get_binance_connection() -> ccxt.binance:
-    """Create a ccxt Binance instance; if api_key/secret are in config.json, attach them."""
+    """Create a ccxt Binance instance using .env or config.defaults.json"""
+    cfg = get()
+
+    api_key = os.getenv("BINANCE_API_KEY") or cfg.get("binance_api_key") or cfg.get("api_key")
+    api_secret = os.getenv("BINANCE_API_SECRET") or cfg.get("binance_api_secret") or cfg.get("api_secret")
+
     credentials = {
         'enableRateLimit': True,
         'options': {'adjustForTimeDifference': True},
     }
-    if _cfg.get("api_key") and _cfg.get("api_secret"):
+
+    if api_key and api_secret:
         credentials.update({
-            'apiKey': _cfg["api_key"],
-            'secret': _cfg["api_secret"],
+            'apiKey': api_key,
+            'secret': api_secret,
         })
     else:
-        logging.warning("Binance api_key/secret not found – running in paper‑mode (no signed endpoints).")
+        logging.warning("⚠️ Binance api_key/secret not found – avvio in modalità simulata (no signed endpoints)")
+
     return ccxt.binance(credentials)
 
 def _to_dataframe(ohlcv):

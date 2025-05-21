@@ -1,0 +1,13 @@
+
+--- a/modules/trade_manager.py
++++ b/modules/trade_manager.py
+@@ def evaluate(self, last, sentiment):
+-        rsi = last['rsi']
+-        sent = sentiment
++        # Support both dict-like (Series) and object with attributes
++        if hasattr(last, 'rsi'):
++            rsi = last.rsi
++        else:
++            rsi = last['rsi']
++        sent = sentiment
+*** End Patch
