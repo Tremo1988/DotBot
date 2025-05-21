@@ -1,54 +1,99 @@
-from __future__ import annotations
-import requests
 import logging
-from textblob import TextBlob
+import requests
 from modules.config_loader import get
 
-# ─── User-Agent ────────────────────────────────────────────────────────────────
-_user_agent = get("reddit_user_agent") or "DotBotSentiment/2.0"
-HEADERS    = {"User-Agent": _user_agent}
+SENTIMENT_LOG_LEVEL = logging.WARNING  # cambia in INFO se vuoi più dettagli
 
-# ─── Default subreddit e parole chiave ──────────────────────────────────────────
-DEFAULT_SUBREDDIT = get("reddit_subreddit") or "Polkadot"
-DEFAULT_KEYWORDS  = get("reddit_keywords") or ["polkadot", "dot", "parachain"]
+# ──────────────── REDDIT (OAuth - PRAW) ────────────────
+def get_reddit_sentiment(subreddit: str) -> float:
+    try:
+        import praw
 
-def _fetch_json(subreddit: str, q: str, limit: int = 100):
-    """
-    Ritorna i post JSON dalla search API di Reddit per una data parola chiave.
-    """
-    url = (
-        f"https://www.reddit.com/r/{subreddit}/search.json"
-        f"?q={q}&restrict_sr=1&sort=new&limit={limit}"
-    )
-    r = requests.get(url, headers=HEADERS, timeout=10)
-    r.raise_for_status()
-    return r.json().get("data", {}).get("children", [])
+        reddit = praw.Reddit(
+            client_id=get("reddit_client_id"),
+            client_secret=get("reddit_client_secret"),
+            user_agent=get("reddit_user_agent"),
+            username=get("reddit_username"),
+            password=get("reddit_password"),
+        )
 
-def get_reddit_sentiment(
-    subreddit: str | None = None,
-    limit: int = 100
-) -> tuple[float | None, int]:
-    """
-    Calcola la sentiment polarity media dei titoli degli ultimi `limit` post
-    su ciascuna parola chiave in DEFAULT_KEYWORDS, nel subreddit specificato
-    o, se non fornito, in DEFAULT_SUBREDDIT.
-    Ritorna (avg_polarity, numero_totale_post).
-    """
-    sr = subreddit or DEFAULT_SUBREDDIT
-    scores: list[float] = []
-    n_posts = 0
+        keywords = get("reddit_keywords") or []
+        if not keywords:
+            logging.log(SENTIMENT_LOG_LEVEL, "Nessuna keyword reddit configurata")
+            return None
 
-    for kw in DEFAULT_KEYWORDS:
-        try:
-            posts = _fetch_json(sr, kw, limit)
-            n_posts += len(posts)
-            for p in posts:
-                title = p["data"].get("title", "")
-                scores.append(TextBlob(title).sentiment.polarity)
-        except Exception as e:
-            logging.warning("Sentiment fetch error [%s] / %r: %s", sr, kw, e)
+        total_score = 0.0
+        count = 0
+        for kw in keywords:
+            posts = reddit.subreddit(subreddit).search(kw, sort="new", limit=100)
+            score = sum(1 for _ in posts) / 100.0
+            total_score += score
+            count += 1
 
-    if not scores:
-        return None, 0
+        return round((total_score / count), 4) if count else None
+    except Exception as e:
+        logging.log(SENTIMENT_LOG_LEVEL, "OAuth Reddit sentiment error: %s", e)
+        return None
 
-    return sum(scores) / len(scores), n_posts
+# ──────────────── GOOGLE TRENDS ────────────────
+def get_google_trend_sentiment(keyword: str) -> float:
+    try:
+        from pytrends.request import TrendReq
+
+        proxies = {}
+        proxy_url = get("google_proxy")
+        if proxy_url:
+            proxies = {"https": proxy_url, "http": proxy_url}
+
+        pytrends = TrendReq(hl='en-US', tz=360, proxies=proxies)
+        pytrends.build_payload([keyword], cat=0, timeframe='now 7-d', geo='', gprop='')
+        data = pytrends.interest_over_time()
+
+        if data.empty or keyword not in data.columns:
+            return None
+
+        values = data[keyword].values
+        return round(float(sum(values[-7:]) / 700.0), 4)
+    except Exception as e:
+        logging.log(SENTIMENT_LOG_LEVEL, "Google Trends sentiment error [%s]: %s", keyword, e)
+        return None
+
+# ──────────────── SUBSCAN ────────────────
+def get_onchain_sentiment(token: str = "polkadot") -> float:
+    try:
+        url = "https://pro.api.subscan.io/api/scan/transfers"
+        headers = {
+            "Content-Type": "application/json",
+            "X-API-Key": get("subscan_api_key") or ""
+        }
+        resp = requests.post(url, json={"row": 50, "page": 0}, headers=headers, timeout=10)
+        resp.raise_for_status()
+        data = resp.json()
+        count = len(data.get("data", {}).get("transfers", []))
+        return round(min(count / 50.0, 1.0), 4)
+    except Exception as e:
+        logging.log(SENTIMENT_LOG_LEVEL, "Subscan sentiment error [%s]: %s", token, e)
+        return None
+
+# ──────────────── COMBINATO ────────────────
+def combined_sentiment(
+    subreddit="polkadot",
+    trend_keyword="polkadot",
+    token="polkadot",
+    weights=(0.5, 0.3, 0.2)
+) -> float:
+    total_weight = 0.0
+    total_score = 0.0
+
+    sources = [
+        (get_reddit_sentiment(subreddit), weights[0]),
+        (get_google_trend_sentiment(trend_keyword), weights[1]),
+        (get_onchain_sentiment(token), weights[2]),
+    ]
+
+    for val, weight in sources:
+        if val is not None:
+            total_score += val * weight
+            total_weight += weight
+
+    return round(total_score / total_weight, 4) if total_weight > 0 else 0.0
